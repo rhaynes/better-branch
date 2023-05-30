@@ -1,19 +1,51 @@
 #!/bin/bash
+
+# Give feedback to let the user know something is happening
+echo "Checking the remote..."
+
 # Fetch remote branches
 git fetch -p
 
 # Get all local branch names
 local_branches=$(git branch --format "%(refname:short)")
 
+# Get current branch
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+# Get default branch
+default_branch=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+
+# ANSI escape codes for colors
+green='\033[0;32m'
+red='\033[0;31m'
+nc='\033[0m' # No color
+
+# If the current branch is not the default, ask if user wants to switch
+if [ "$current_branch" != "$default_branch" ]; then
+  echo -e "${green}You're currently on '$current_branch'. Do you want to switch to '$default_branch' and pull the latest?${nc}"
+  read -p " (y/n) " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    git checkout "$default_branch"
+    git pull origin
+  fi
+fi
+
 # Loop over each local branch
 for branch in $local_branches; do
   # If the branch doesn't exist on the remote
   if ! git show-ref --quiet --verify "refs/remotes/origin/$branch"; then
     # Ask user for confirmation before deleting the local branch
-    read -p "Branch '$branch' does not exist on remote. Delete it locally? (y/n) " -n 1 -r
+    echo -e "${red}Branch '$branch' does not exist on remote. Delete it locally?${nc}"
+    read -p " (y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       git branch -d "$branch"
     fi
   fi
 done
+
+# Run the git branch command to show all local
+echo ""
+echo "Current local branches"
+git branch
