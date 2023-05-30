@@ -1,0 +1,19 @@
+#!/bin/bash
+# Fetch remote branches
+git fetch -p
+
+# Get all local branch names
+local_branches=$(git branch --format "%(refname:short)")
+
+# Loop over each local branch
+for branch in $local_branches; do
+  # If the branch doesn't exist on the remote
+  if ! git show-ref --quiet --verify "refs/remotes/origin/$branch"; then
+    # Ask user for confirmation before deleting the local branch
+    read -p "Branch '$branch' does not exist on remote. Delete it locally? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      git branch -d "$branch"
+    fi
+  fi
+done
